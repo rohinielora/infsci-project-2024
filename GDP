@@ -1,0 +1,110 @@
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+import plotly.io as pio
+from urllib.request import urlopen
+import json
+
+
+temp_df = pd.read_csv("../data/temp_std_clean.csv")
+stdt_df = pd.read_csv("../data/std_temp_means.csv")
+
+gdp_df = pd.read_csv("../data/gdp_clean.csv")
+gdp_df.head()
+
+GDPpc_df = gdp_df[gdp_df["Element"] == "Value US$ per capita"]
+
+c = list(GDPpc_df.Area.unique())
+
+with open("../data/countries.geojson") as response:
+    countries = json.load(response)
+
+jc = []
+for feature in countries['features']:
+    jc.append(feature['properties']['ADMIN'])
+
+result_c = []
+
+for item in c:
+    if item not in jc:
+        result_c.append(item)
+        
+print(result_c)
+
+result_jc = []
+
+for item in jc:
+    if item not in c:
+        result_jc.append(item)
+        
+print(result_jc)
+
+countries_dict = {
+    'Bahamas' : 'The Bahamas',
+    'Bolivia (Plurinational State of)':'Bolivia',
+    'Brunei Darussalam':'Brunei',
+    'Cabo Verde':'Cape Verde',
+    'China, Hong Kong SAR':'Hong Kong S.A.R.',
+    'China, Macao SAR':'Macao S.A.R',
+    'China, Taiwan Province of':'Taiwan',
+    'Congo':'Republic of Congo',
+    "Côte d'Ivoire":'Ivory Coast',
+    'Czechia':'Czech Republic',
+    "Democratic People's Republic of Korea":'North Korea',
+    'Eswatini':'Swaziland',
+    'Republic of Korea':'South Korea',
+    'Falkland Islands (Malvinas)':'Falkland Islands',
+    'Guinea-Bissau':'Guinea Bissau',
+    'Iran (Islamic Republic of)':'Iran',
+    "Lao People's Democratic Republic":'Laos',
+    'North Macedonia':'Macedonia',
+    'Republic of Moldova':'Moldova',
+    'Serbia':'Republic of Serbia',
+    'Serbia and Montenegro':'Kosovo',
+    'South Georgia and the South Sandwich Islands':'South Georgia and South Sandwich Islands',
+    'Sudan (former)':'Somaliland',
+    'Syrian Arab Republic':'Syria',
+    'Timor-Leste':'East Timor',
+    'Türkiye':'Turkey',
+    'United Kingdom of Great Britain and Northern Ireland':'United Kingdom',
+    'USSR':'Russia',
+    'Venezuela (Bolivarian Republic of)':'Venezuela',
+    'Viet Nam':'Vietnam',
+    'Wallis and Futuna Islands':'Wallis and Futuna',    
+}
+
+new_GDPpc_df = GDPpc_df.copy()
+new_GDPpc_df.Area = new_GDPpc_df.Area.replace(countries_dict)
+
+c = list(new_GDPpc_df.Area.unique())
+
+result_c = []
+
+for item in c:
+    if item not in jc:
+        result_c.append(item)
+        
+print(result_c)
+
+print(result_jc)
+
+new_dict={
+    'Russian Federation':'Russia',
+}
+
+new2_GDPpc_df = new_GDPpc_df.copy()
+new2_GDPpc_df.Area = new2_GDPpc_df.Area.replace(new_dict)
+new2_GDPpc_df.head()
+
+last_GDPpc_df = new2_GDPpc_df[["Area","2018"]]
+
+
+last_GDPpc_df.to_csv("../data/gdppc18_clean.csv")
+
+df_cd = pd.merge(last_GDPpc_df, stdt_df, how='inner')
+df_cd = df_cd.drop(["Unnamed: 0"], axis=1)
+
+
+df_cd = df_cd.rename(columns={"2018":"GDPpc", "Value":"Std_temp"})
+
+df_cd.to_csv("../data/temp_gdppc.csv")
